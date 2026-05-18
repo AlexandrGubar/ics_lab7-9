@@ -1,0 +1,3 @@
+pika
+pyTelegramBotAPI
+prometheus_client

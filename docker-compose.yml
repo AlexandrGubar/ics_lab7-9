@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - monitoring_network
+
+  bot_producer:
+    build: ./producer
+    container_name: bot_producer
+    restart: always
+    environment:
+      - TELEGRAM_TOKEN=8581660768:AAEqxxjCVht4KEOQIeX-xhy7ZktTVBpmmVM
+      - RABBITMQ_HOST=rabbitmq
+    ports:
+      - "9092:9092"
+    depends_on:
+      - rabbitmq
+    networks:
+      - monitoring_network
+
+  bot_consumer:
+    build: ./consumer
+    container_name: bot_consumer
+    restart: always
+    environment:
+      - TELEGRAM_TOKEN=8859380062:AAEHAyl5PEH7N1TkzIXior4MttR8bnutMKQ
+      - RABBITMQ_HOST=rabbitmq
+    ports:
+      - "9091:9091"
+    depends_on:
+      - rabbitmq
+    networks:
+      - monitoring_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - bot_producer
+      - bot_consumer
+    networks:
+      - monitoring_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring_network
+
+networks:
+  monitoring_network:
+    driver: bridge
